@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Bot, 
   Settings as SettingsIcon, 
@@ -10,7 +10,6 @@ import {
   Send, 
   Save, 
   RefreshCw,
-  Code2,
   FileCode
 } from 'lucide-react';
 
@@ -29,6 +28,16 @@ interface StudioStatus {
   place_id: number | null;
   place_name: string | null;
   script_count: number;
+}
+
+// Helper to safely invoke Tauri commands with browser fallback
+async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return await invoke<T>(cmd, args);
+  } catch {
+    return null;
+  }
 }
 
 export default function App() {
@@ -60,16 +69,30 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Poll status
+  // Load settings on initial mount
+  useEffect(() => {
+    tauriInvoke<LlmSettings>('get_llm_settings').then(loaded => {
+      if (loaded) {
+        setSettings(loaded);
+      }
+    });
+  }, []);
+
+  // Poll status from bridge / Tauri backend
   useEffect(() => {
     const fetchStatus = async () => {
+      const nativeStatus = await tauriInvoke<StudioStatus>('get_studio_status');
+      if (nativeStatus) {
+        setStatus(nativeStatus);
+        return;
+      }
       try {
         const res = await fetch('http://127.0.0.1:39024/status');
         if (res.ok) {
           const data = await res.json();
           setStatus(data);
         }
-      } catch (e) {
+      } catch {
         // bridge not listening or offline
       }
     };
@@ -87,7 +110,15 @@ export default function App() {
     setLoading(true);
 
     try {
-      // Direct call to LLM via Base URL & API Key
+      // 1. First attempt: Use Tauri backend native agent session
+      const backendReply = await tauriInvoke<string>('send_agent_prompt', { prompt: userText });
+      if (backendReply) {
+        setMessages(prev => [...prev, { role: 'assistant', content: backendReply }]);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fallback: Direct call to LLM via Base URL & API Key in web preview
       const systemPrompt = `You are RbxAgent AI Assistant for Roblox Studio Luau engineering. Studio place: ${status.place_name || 'None'}. Provide optimized Luau code.`;
       const url = `${settings.base_url.replace(/\/+$/, '')}/chat/completions`;
       
@@ -121,17 +152,19 @@ export default function App() {
       const json = await res.json();
       const reply = json.choices?.[0]?.message?.content || 'No response content.';
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: `Error: ${err.message}. Periksa kembali Base URL dan API Key di menu Settings.` 
+        content: `Error: ${errMsg}. Periksa kembali Base URL dan API Key di menu Settings.` 
       }]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
+    await tauriInvoke('save_llm_settings', { settings });
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2500);
   };
@@ -163,7 +196,7 @@ export default function App() {
               <XCircle className="w-4 h-4 text-[#9aa7a1]" />
             )}
             <div className="flex-1 truncate">
-              <p className="font-medium truncate">{status.connected ? status.place_name : 'Studio Offline'}</p>
+              <p className="font-medium truncate">{status.connected ? (status.place_name || 'Connected Place') : 'Studio Offline'}</p>
               <p className="text-[10px] text-[#788881]">{status.connected ? `${status.script_count} scripts sync` : 'Port :39024'}</p>
             </div>
           </div>
@@ -361,7 +394,7 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 4: CUSTOM LLM SETTINGS (Sesuai Permintaan User) */}
+        {/* VIEW 4: CUSTOM LLM SETTINGS */}
         {activeTab === 'settings' && (
           <div className="flex-1 flex flex-col h-full p-6 space-y-6 overflow-y-auto">
             <div className="flex items-center justify-between">
@@ -453,7 +486,10 @@ export default function App() {
                     min="0"
                     max="1"
                     value={settings.temperature}
-                    onChange={(e) => setSettings({ ...settings, temperature: parseFloat(e.target.value) || 0.2 })}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setSettings({ ...settings, temperature: isNaN(val) ? 0.2 : val });
+                    }}
                     className="w-full bg-[#f8faf9] border border-[#d6dfda] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#2a634e]"
                   />
                 </div>
@@ -466,7 +502,10 @@ export default function App() {
                     type="number"
                     step="512"
                     value={settings.max_tokens}
-                    onChange={(e) => setSettings({ ...settings, max_tokens: parseInt(e.target.value) || 4096 })}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      setSettings({ ...settings, max_tokens: isNaN(val) ? 4096 : val });
+                    }}
                     className="w-full bg-[#f8faf9] border border-[#d6dfda] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#2a634e]"
                   />
                 </div>

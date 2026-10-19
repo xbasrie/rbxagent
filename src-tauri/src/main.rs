@@ -1,7 +1,6 @@
-use rbxagent_desktop_lib::settings::{LlmSettings, SettingsManager};
-use rbxagent_desktop_lib::bridge::{BridgeState, RobloxScriptItem, StudioStatus};
 use rbxagent_desktop_lib::agent::AgentSession;
-use std::sync::Arc;
+use rbxagent_desktop_lib::bridge::{BridgeState, RobloxScriptItem, StudioStatus};
+use rbxagent_desktop_lib::settings::{LlmSettings, SettingsManager};
 use tauri::State;
 
 struct AppState {
@@ -34,16 +33,20 @@ fn get_studio_scripts(state: State<AppState>) -> Vec<RobloxScriptItem> {
 async fn send_agent_prompt(state: State<'_, AppState>, prompt: String) -> Result<String, String> {
     let settings = state.settings_mgr.get();
     let status = state.bridge.get_status();
-    let scripts = state.bridge.scripts.lock().unwrap();
 
-    let mut context_summary = format!(
-        "Connected: {}\nPlace: {:?} (ID: {:?})\nScripts Active: {}\n",
-        status.connected, status.place_name, status.place_id, scripts.len()
-    );
+    // Extract context into owned string before await to prevent MutexGuard held across await
+    let context_summary = {
+        let scripts = state.bridge.scripts.lock().unwrap();
+        let mut summary = format!(
+            "Connected: {}\nPlace: {:?} (ID: {:?})\nScripts Active: {}\n",
+            status.connected, status.place_name, status.place_id, scripts.len()
+        );
 
-    for s in scripts.values().take(10) {
-        context_summary.push_str(&format!("- [{}] {}\n", s.class_name, s.parent_path));
-    }
+        for s in scripts.values().take(10) {
+            summary.push_str(&format!("- [{}] {}\n", s.class_name, s.parent_path));
+        }
+        summary
+    };
 
     state.agent.execute_turn(&prompt, &settings, &context_summary).await
 }
@@ -52,12 +55,10 @@ fn main() {
     let bridge_state = BridgeState::new();
     let port = 39024;
 
-    // Start background bridge server for Roblox Studio
-    tokio::runtime::Runtime::new().unwrap().spawn({
-        let bs = bridge_state.clone();
-        async move {
-            rbxagent_desktop_lib::bridge::start_bridge_server(port, bs).await;
-        }
+    // Start background bridge server for Roblox Studio using Tauri's persistent async runtime
+    let bs = bridge_state.clone();
+    tauri::async_runtime::spawn(async move {
+        rbxagent_desktop_lib::bridge::start_bridge_server(port, bs).await;
     });
 
     let app_state = AppState {

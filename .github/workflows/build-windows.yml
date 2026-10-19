@@ -27,18 +27,10 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install Frontend Dependencies
+      - name: Install Dependencies
         run: npm install
 
-      - name: Build Vite Frontend
-        run: npx vite build
-
       - name: Build Tauri Desktop (.exe / NSIS)
-        run: npx tauri build --no-bundle
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Bundle NSIS Installer
         run: npx tauri build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,4 +42,4 @@ jobs:
           name: RbxAgent-Windows-Build
           path: |
             src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/*.exe
+            src-tauri/target/release/rbxagent-desktop.exe

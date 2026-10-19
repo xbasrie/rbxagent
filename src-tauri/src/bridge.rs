@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use warp::Filter;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +26,7 @@ pub struct StudioStatus {
 pub struct BridgeState {
     pub status: Arc<Mutex<StudioStatus>>,
     pub scripts: Arc<Mutex<HashMap<String, RobloxScriptItem>>>,
+    pub last_heartbeat: Arc<Mutex<Option<Instant>>>,
     pub auth_token: Arc<String>,
 }
 
@@ -40,12 +42,25 @@ impl BridgeState {
                 script_count: 0,
             })),
             scripts: Arc::new(Mutex::new(HashMap::new())),
+            last_heartbeat: Arc::new(Mutex::new(None)),
             auth_token: Arc::new(auth_token),
         }
     }
 
     pub fn get_status(&self) -> StudioStatus {
         let mut st = self.status.lock().unwrap().clone();
+        let is_alive = self
+            .last_heartbeat
+            .lock()
+            .unwrap()
+            .map(|t| t.elapsed() < Duration::from_secs(12))
+            .unwrap_or(false);
+        st.connected = is_alive;
+        if !is_alive {
+            st.place_name = None;
+            st.place_id = None;
+            st.studio_pid = None;
+        }
         st.script_count = self.scripts.lock().unwrap().len();
         st
     }
@@ -69,6 +84,7 @@ pub async fn start_bridge_server(port: u16, state: BridgeState) {
         .and(warp::body::json())
         .and(state_filter.clone())
         .map(|body: serde_json::Value, s: BridgeState| {
+            *s.last_heartbeat.lock().unwrap() = Some(Instant::now());
             let mut st = s.status.lock().unwrap();
             st.connected = true;
             if let Some(pid) = body.get("pid").and_then(|v| v.as_u64()) {
@@ -98,6 +114,7 @@ pub async fn start_bridge_server(port: u16, state: BridgeState) {
         .and(warp::body::json())
         .and(state_filter.clone())
         .map(|items: Vec<RobloxScriptItem>, s: BridgeState| {
+            *s.last_heartbeat.lock().unwrap() = Some(Instant::now());
             let mut map = s.scripts.lock().unwrap();
             map.clear();
             for item in items {
@@ -113,7 +130,5 @@ pub async fn start_bridge_server(port: u16, state: BridgeState) {
         .with(warp::cors().allow_any_origin());
 
     let addr = ([127, 0, 0, 1], port);
-    tokio::spawn(async move {
-        warp::serve(routes).run(addr).await;
-    });
+    warp::serve(routes).run(addr).await;
 }
