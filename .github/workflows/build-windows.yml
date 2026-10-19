@@ -31,7 +31,9 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: false
         with:
+          args: --verbose
           tagName: v__VERSION__
           releaseName: 'RbxAgent Desktop v__VERSION__'
           releaseBody: 'Automated Windows build with custom LLM settings & StudioMCP loopback.'
