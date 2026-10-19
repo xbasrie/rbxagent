@@ -5,9 +5,7 @@
   "identifier": "dev.rbxagent.desktop",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "devUrl": "http://localhost:5173"
   },
   "app": {
     "windows": [
