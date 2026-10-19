@@ -54,7 +54,7 @@ export default function App() {
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([
     {
       role: 'assistant',
-      content: 'Halo! Saya RobloxKit AI Assistant. Roblox Studio bridge aktif di port 39024. Silakan hubungkan plugin Luau atau mulai coding.'
+      content: 'Halo! Saya RbxAgent AI Assistant. Roblox Studio bridge aktif di port 39024. Silakan hubungkan plugin Luau atau mulai coding.'
     }
   ]);
   const [loading, setLoading] = useState(false);
@@ -88,7 +88,7 @@ export default function App() {
 
     try {
       // Direct call to LLM via Base URL & API Key
-      const systemPrompt = `You are RobloxKit AI Assistant for Roblox Studio Luau engineering. Studio place: ${status.place_name || 'None'}. Provide optimized Luau code.`;
+      const systemPrompt = `You are RbxAgent AI Assistant for Roblox Studio Luau engineering. Studio place: ${status.place_name || 'None'}. Provide optimized Luau code.`;
       const url = `${settings.base_url.replace(/\/+$/, '')}/chat/completions`;
       
       const headers: Record<string, string> = {
@@ -146,7 +146,7 @@ export default function App() {
               R
             </div>
             <div>
-              <h1 className="font-semibold text-sm tracking-tight text-[#111815]">RobloxKit</h1>
+              <h1 className="font-semibold text-sm tracking-tight text-[#111815]">RbxAgent</h1>
               <p className="text-[11px] text-[#6b7c74]">Desktop Studio v0.3.0</p>
             </div>
           </div>
@@ -321,10 +321,10 @@ export default function App() {
                 <span>Petunjuk Integrasi Plugin Roblox Studio</span>
               </div>
               <p className="text-xs text-[#52635c] leading-relaxed">
-                Salin file plugin <code className="bg-[#f0f4f2] text-[#214f3e] px-1.5 py-0.5 rounded font-mono">roblox-plugin/src/RobloxKitBridge.lua</code> ke direktori plugin lokal Roblox Anda:
+                Salin file plugin <code className="bg-[#f0f4f2] text-[#214f3e] px-1.5 py-0.5 rounded font-mono">roblox-plugin/src/RbxAgentBridge.lua</code> ke direktori plugin lokal Roblox Anda:
               </p>
               <pre className="bg-[#f4f7f5] border border-[#dce4e0] p-3 rounded-lg text-xs font-mono text-[#2c3b34]">
-                %localappdata%\Roblox\Plugins\RobloxKitBridge.lua
+                %localappdata%\Roblox\Plugins\RbxAgentBridge.lua
               </pre>
               <p className="text-[11px] text-[#71827b]">
                 Setelah file diletakkan, buka Roblox Studio dan nyalakan opsi <b>HttpService.HttpEnabled = true</b> pada Game Settings.
@@ -381,7 +381,7 @@ export default function App() {
             {saveSuccess && (
               <div className="bg-[#ecf7f2] border border-[#bde5d4] text-[#1a5b3f] text-xs p-3 rounded-xl flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-[#1a5b3f]" />
-                <span>Pengaturan LLM berhasil disimpan secara lokal ke ~/.robloxkit/llm_settings.json</span>
+                <span>Pengaturan LLM berhasil disimpan secara lokal ke ~/.rbxagent/llm_settings.json</span>
               </div>
             )}
 

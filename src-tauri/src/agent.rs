@@ -39,7 +39,7 @@ impl AgentSession {
         studio_context: &str,
     ) -> Result<String, String> {
         let system_prompt = format!(
-            "You are RobloxKit AI, an expert Roblox Game Engineer and Luau developer.\n\
+            "You are RbxAgent AI, an expert Roblox Game Engineer and Luau developer.\n\
              Roblox Studio Current Context:\n{}\n\n\
              Always write clean, optimized, production-ready Luau script. If you propose editing a script, \
              use the format: ```luau:script_path\n-- code\n``` so the diff viewer can intercept it.",

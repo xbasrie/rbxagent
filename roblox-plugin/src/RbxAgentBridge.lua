@@ -1,6 +1,6 @@
 --!strict
--- RobloxKit Studio Bridge Client Plugin
--- Letakkan file ini di direktori Roblox Studio Plugins: %localappdata%/Roblox/Plugins/RobloxKitBridge.lua
+-- RbxAgent Studio Bridge Client Plugin
+-- Letakkan file ini di direktori Roblox Studio Plugins: %localappdata%/Roblox/Plugins/RbxAgentBridge.lua
 
 local HttpService = game:GetService("HttpService")
 local ScriptEditorService = game:GetService("ScriptEditorService")
@@ -10,7 +10,7 @@ local BRIDGE_URL = "http://127.0.0.1:39024"
 local SYNC_INTERVAL = 5 -- detik
 local lastSync = 0
 
-print("[RobloxKit] Initializing RobloxKit Studio Bridge Plugin...")
+print("[RbxAgent] Initializing RbxAgent Studio Bridge Plugin...")
 
 -- Fungsi pengirim heartbeat status ke desktop
 local function sendHeartbeat()
@@ -83,4 +83,4 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
-print("[RobloxKit] Bridge active. Connected to " .. BRIDGE_URL)
+print("[RbxAgent] Bridge active. Connected to " .. BRIDGE_URL)

@@ -1,12 +1,12 @@
 [package]
-name = "robloxkit-desktop"
+name = "rbxagent-desktop"
 version = "0.3.0"
 description = "AI Agent Suite & Studio Bridge for Roblox Development"
-authors = ["RobloxKit Community"]
+authors = ["RbxAgent Community"]
 edition = "2021"
 
 [lib]
-name = "robloxkit_desktop_lib"
+name = "rbxagent_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

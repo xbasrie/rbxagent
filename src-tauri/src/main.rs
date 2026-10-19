@@ -1,6 +1,6 @@
-use robloxkit_desktop_lib::settings::{LlmSettings, SettingsManager};
-use robloxkit_desktop_lib::bridge::{BridgeState, RobloxScriptItem, StudioStatus};
-use robloxkit_desktop_lib::agent::AgentSession;
+use rbxagent_desktop_lib::settings::{LlmSettings, SettingsManager};
+use rbxagent_desktop_lib::bridge::{BridgeState, RobloxScriptItem, StudioStatus};
+use rbxagent_desktop_lib::agent::AgentSession;
 use std::sync::Arc;
 use tauri::State;
 
@@ -56,7 +56,7 @@ fn main() {
     tokio::runtime::Runtime::new().unwrap().spawn({
         let bs = bridge_state.clone();
         async move {
-            robloxkit_desktop_lib::bridge::start_bridge_server(port, bs).await;
+            rbxagent_desktop_lib::bridge::start_bridge_server(port, bs).await;
         }
     });
 

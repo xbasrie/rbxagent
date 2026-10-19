@@ -33,7 +33,7 @@ pub struct SettingsManager {
 
 impl SettingsManager {
     pub fn new() -> Self {
-        let config_dir = dirs_fallback().join(".robloxkit");
+        let config_dir = dirs_fallback().join(".rbxagent");
         if !config_dir.exists() {
             let _ = fs::create_dir_all(&config_dir);
         }

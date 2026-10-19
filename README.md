@@ -1,4 +1,4 @@
-# RobloxKit Desktop Suite 1:1
+# RbxAgent Desktop Suite 1:1
 
 Open-source, self-hosted, modular clone of RobloxKit Desktop. Integrates Autonomous AI coding agents directly with Roblox Studio DataModel through standardized loopback protocols (StudioMCP) and features custom LLM endpoint routing with embedded MIDI SoundFont synthesis.
 
@@ -13,7 +13,7 @@ Open-source, self-hosted, modular clone of RobloxKit Desktop. Integrates Autonom
 ## Architecture
 
 ```
-robloxkit-desktop/
+rbxagent/
 ├── src-tauri/          # Core backend in Rust
 │   ├── src/
 │   │   ├── main.rs     # Application entrypoint & IPC router
@@ -29,7 +29,7 @@ robloxkit-desktop/
 │   └── index.css
 ├── roblox-plugin/      # Roblox Studio Luau Plugin
 │   └── src/
-│       └── RobloxKitBridge.lua # Local sync plugin
+│       └── RbxAgentBridge.lua # Local sync plugin
 └── package.json
 ```
 
@@ -46,6 +46,6 @@ robloxkit-desktop/
    ```
 
 3. **Install Roblox Studio Plugin**:
-   Copy `roblox-plugin/src/RobloxKitBridge.lua` to:
-   - Windows: `%localappdata%\Roblox\Plugins\RobloxKitBridge.lua`
-   - macOS: `~/Documents/Roblox/Plugins/RobloxKitBridge.lua`
+   Copy `roblox-plugin/src/RbxAgentBridge.lua` to:
+   - Windows: `%localappdata%\Roblox\Plugins\RbxAgentBridge.lua`
+   - macOS: `~/Documents/Roblox/Plugins/RbxAgentBridge.lua`
