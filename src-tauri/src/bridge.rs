@@ -22,11 +22,20 @@ pub struct StudioStatus {
     pub script_count: usize,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodePatch {
+    pub script_id: String,
+    pub script_path: String,
+    pub new_source: String,
+    pub status: String, // "pending", "applied", "rejected"
+}
+
 #[derive(Clone)]
 pub struct BridgeState {
     pub status: Arc<Mutex<StudioStatus>>,
     pub scripts: Arc<Mutex<HashMap<String, RobloxScriptItem>>>,
     pub last_heartbeat: Arc<Mutex<Option<Instant>>>,
+    pub pending_patches: Arc<Mutex<Vec<CodePatch>>>,
     pub auth_token: Arc<String>,
 }
 
@@ -43,6 +52,7 @@ impl BridgeState {
             })),
             scripts: Arc::new(Mutex::new(HashMap::new())),
             last_heartbeat: Arc::new(Mutex::new(None)),
+            pending_patches: Arc::new(Mutex::new(Vec::new())),
             auth_token: Arc::new(auth_token),
         }
     }
@@ -99,7 +109,7 @@ pub async fn start_bridge_server(port: u16, state: BridgeState) {
             warp::reply::json(&serde_json::json!({ "status": "ok", "ack": true }))
         });
 
-    // GET /scripts - kembalikan list script aktif ke agent
+    // GET /scripts
     let get_scripts_route = warp::path("scripts")
         .and(warp::get())
         .and(state_filter.clone())
@@ -123,10 +133,47 @@ pub async fn start_bridge_server(port: u16, state: BridgeState) {
             warp::reply::json(&serde_json::json!({ "status": "synced", "count": map.len() }))
         });
 
+    // GET /patches/poll - Luau plugin polling untuk ambil pending code patches
+    let poll_patches_route = warp::path!("patches" / "poll")
+        .and(warp::get())
+        .and(state_filter.clone())
+        .map(|s: BridgeState| {
+            let mut patches = s.pending_patches.lock().unwrap();
+            let pending: Vec<CodePatch> = patches
+                .iter()
+                .filter(|p| p.status == "pending")
+                .cloned()
+                .collect();
+            // Mark as applied once polled by plugin
+            for p in patches.iter_mut() {
+                if p.status == "pending" {
+                    p.status = "applied".to_string();
+                }
+            }
+            warp::reply::json(&pending)
+        });
+
+    // POST /patches/result - Luau plugin reports apply result
+    let patch_result_route = warp::path!("patches" / "result")
+        .and(warp::post())
+        .and(warp::body::json())
+        .and(state_filter.clone())
+        .map(|body: serde_json::Value, s: BridgeState| {
+            let script_id = body.get("script_id").and_then(|v| v.as_str()).unwrap_or("");
+            let success = body.get("success").and_then(|v| v.as_bool()).unwrap_or(false);
+            let mut patches = s.pending_patches.lock().unwrap();
+            if let Some(p) = patches.iter_mut().find(|p| p.script_id == script_id) {
+                p.status = if success { "applied".to_string() } else { "failed".to_string() };
+            }
+            warp::reply::json(&serde_json::json!({ "status": "ack" }))
+        });
+
     let routes = status_route
         .or(heartbeat_route)
         .or(get_scripts_route)
         .or(sync_scripts_route)
+        .or(poll_patches_route)
+        .or(patch_result_route)
         .with(warp::cors().allow_any_origin());
 
     let addr = ([127, 0, 0, 1], port);
